@@ -1,70 +1,93 @@
 <template>
   <div class="login-container">
-    <div class="background-decoration">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-      <div class="circle circle-3"></div>
+    <!-- 左側品牌區域 -->
+    <div class="brand-section">
+      <div class="brand-content">
+        <div class="logo-wrapper">
+          <div class="logo-icon">
+            <i class="ri-store-2-fill"></i>
+          </div>
+        </div>
+        <h1 class="brand-title">澳門生活商城</h1>
+        <p class="brand-subtitle">Management System</p>
+        <div class="brand-features">
+          <div class="feature-item">
+            <i class="ri-shield-check-line"></i>
+            <span>安全可靠</span>
+          </div>
+          <div class="feature-item">
+            <i class="ri-rocket-line"></i>
+            <span>高效管理</span>
+          </div>
+          <div class="feature-item">
+            <i class="ri-bar-chart-line"></i>
+            <span>數據洞察</span>
+          </div>
+        </div>
+      </div>
+      <div class="brand-decoration">
+        <div class="decoration-circle decoration-1"></div>
+        <div class="decoration-circle decoration-2"></div>
+        <div class="decoration-circle decoration-3"></div>
+      </div>
     </div>
 
-    <div class="login-box">
-      <div class="login-header">
-        <div class="icon-wrapper">
-          <i class="ri-store-2-line"></i>
+    <!-- 右側登錄區域 -->
+    <div class="login-section">
+      <div class="login-box">
+        <div class="login-header">
+          <h2>歡迎回來</h2>
+          <p>請登錄您的管理賬戶</p>
         </div>
-        <h1>澳门生活商城</h1>
-        <p>管理后台系统</p>
-      </div>
 
-      <t-form
-        ref="formRef"
-        :data="formData"
-        :rules="rules"
-        label-align="top"
-        @submit="handleSubmit"
-      >
-        <t-form-item label="用户名" name="username">
-          <t-input
-            v-model="formData.username"
-            placeholder="请输入用户名"
-            clearable
-            size="large"
-            autofocus
-          >
-            <template #prefix-icon>
-              <i class="ri-user-line"></i>
-            </template>
-          </t-input>
-        </t-form-item>
+        <t-form
+          ref="formRef"
+          :data="formData"
+          :rules="rules"
+          label-align="top"
+          @submit="handleSubmit"
+          class="login-form"
+        >
+          <t-form-item label="用戶名" name="username">
+            <t-input
+              v-model="formData.username"
+              placeholder="請輸入用戶名"
+              clearable
+              size="large"
+              autofocus
+            >
+              <template #prefix-icon>
+                <i class="ri-user-line"></i>
+              </template>
+            </t-input>
+          </t-form-item>
 
-        <t-form-item label="密码" name="password">
-          <t-input
-            v-model="formData.password"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="请输入密码"
-            clearable
-            size="large"
-            @keyup.enter="handleSubmit"
-          >
-            <template #prefix-icon>
-              <i class="ri-lock-line"></i>
-            </template>
-            <template #suffix-icon>
-              <i
-                :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"
-                class="password-toggle"
-                @click="showPassword = !showPassword"
-              ></i>
-            </template>
-          </t-input>
-        </t-form-item>
+          <t-form-item label="密碼" name="password">
+            <t-input
+              v-model="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="請輸入密碼"
+              clearable
+              size="large"
+              @keyup.enter="handleSubmit"
+            >
+              <template #prefix-icon>
+                <i class="ri-lock-line"></i>
+              </template>
+              <template #suffix-icon>
+                <i
+                  :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"
+                  class="password-toggle"
+                  @click="showPassword = !showPassword"
+                ></i>
+              </template>
+            </t-input>
+          </t-form-item>
 
-        <t-form-item>
-          <div class="remember-row">
-            <t-checkbox v-model="rememberMe">记住密码</t-checkbox>
+          <div class="form-options">
+            <t-checkbox v-model="rememberMe">記住密碼</t-checkbox>
           </div>
-        </t-form-item>
 
-        <t-form-item>
           <t-button
             theme="primary"
             type="submit"
@@ -73,14 +96,14 @@
             :loading="loading"
             class="login-button"
           >
-            <span v-if="!loading">登录</span>
-            <span v-else>登录中...</span>
+            <span v-if="!loading">登錄</span>
+            <span v-else>登錄中...</span>
           </t-button>
-        </t-form-item>
-      </t-form>
+        </t-form>
 
-      <div class="login-footer">
-        <p>© 2024 澳门生活商城 - 管理系统</p>
+        <div class="login-footer">
+          <p>© 2024 澳門生活商城. All rights reserved.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -146,84 +169,259 @@ async function handleSubmit({ validateResult }: { validateResult: boolean }) {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 左側品牌區域 */
+.brand-section {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-  position: relative;
+  padding: 60px;
   overflow: hidden;
 }
 
-.background-decoration {
+.brand-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: white;
+}
+
+.logo-wrapper {
+  margin-bottom: 40px;
+  animation: fadeInDown 0.8s ease-out;
+}
+
+.logo-icon {
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all var(--d-slow) var(--ease-std);
+}
+
+.logo-icon:hover {
+  transform: translateY(-4px) scale(1.05);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.logo-icon i {
+  font-size: 56px;
+  color: white;
+}
+
+.brand-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  letter-spacing: -1px;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.brand-subtitle {
+  font-size: 18px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.9;
+  margin-bottom: 60px;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.brand-features {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all var(--d-slow) var(--ease-std);
+  min-width: 100px;
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.feature-item i {
+  font-size: 32px;
+  color: white;
+}
+
+.feature-item span {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.95;
+}
+
+/* 裝飾元素 */
+.brand-decoration {
   position: absolute;
   width: 100%;
   height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1;
   overflow: hidden;
-  z-index: 0;
 }
 
-.circle {
+.decoration-circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   animation: float 20s infinite ease-in-out;
 }
 
-.circle-1 {
-  width: 300px;
-  height: 300px;
+.decoration-1 {
+  width: 400px;
+  height: 400px;
   top: -100px;
   left: -100px;
   animation-delay: 0s;
 }
 
-.circle-2 {
+.decoration-2 {
+  width: 300px;
+  height: 300px;
+  bottom: -80px;
+  right: -80px;
+  animation-delay: 7s;
+}
+
+.decoration-3 {
   width: 200px;
   height: 200px;
-  bottom: -50px;
-  right: -50px;
-  animation-delay: 5s;
-}
-
-.circle-3 {
-  width: 150px;
-  height: 150px;
-  top: 50%;
+  top: 40%;
   right: 10%;
-  animation-delay: 10s;
+  animation-delay: 14s;
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -30px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
+/* 右側登錄區域 */
+.login-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 60px;
 }
 
 .login-box {
   width: 100%;
-  max-width: 420px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 48px 40px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1;
-  animation: slideUp 0.6s ease-out;
+  max-width: 460px;
+  animation: fadeInRight 0.8s ease-out;
 }
 
-@keyframes slideUp {
+.login-header {
+  margin-bottom: 40px;
+}
+
+.login-header h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.login-header p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.login-form {
+  margin-bottom: 32px;
+}
+
+.form-options {
+  margin: -4px 0 28px 0;
+}
+
+.password-toggle {
+  cursor: pointer;
+  transition: all var(--d-fast) var(--ease-std);
+  font-size: 18px;
+  color: var(--text-tertiary);
+}
+
+.password-toggle:hover {
+  color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.password-toggle:active {
+  transform: scale(0.95);
+}
+
+.login-button {
+  height: 48px;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+  transition: transform var(--d-base) var(--ease-std),
+              box-shadow var(--d-base) var(--ease-std),
+              background var(--d-fast) var(--ease-std);
+  min-height: 44px;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-s2);
+}
+
+.login-button:active {
+  transform: scale(var(--scale-press));
+  box-shadow: var(--shadow-s1);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-color);
+}
+
+.login-footer p {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* 動畫 - 使用設計指南的動效參數 */
+@keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(-24px);
   }
   to {
     opacity: 1;
@@ -231,101 +429,111 @@ async function handleSubmit({ validateResult }: { validateResult: boolean }) {
   }
 }
 
-.login-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.icon-wrapper {
-  display: inline-block;
-  margin-bottom: 20px;
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 100% {
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(-10px);
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
-.login-header i {
-  font-size: 56px;
-  color: #0052d9;
-  display: block;
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.08);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.92);
+  }
 }
 
-.login-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.5px;
+/* 響應式設計 - 精細化移動端適配 */
+@media (max-width: 1200px) {
+  .brand-features {
+    gap: 24px;
+  }
+
+  .feature-item {
+    padding: 20px 16px;
+    min-width: 90px;
+  }
+
+  .brand-title {
+    font-size: 42px;
+  }
 }
 
-.login-header p {
-  font-size: 15px;
-  color: #666;
-  margin: 0;
-  font-weight: 400;
-}
+@media (max-width: 1024px) {
+  .brand-section {
+    display: none;
+  }
 
-.password-toggle {
-  cursor: pointer;
-  transition: color 0.2s;
-  font-size: 18px;
-}
+  .login-section {
+    flex: 1;
+    padding: 48px 32px;
+  }
 
-.password-toggle:hover {
-  color: #0052d9;
-}
-
-.remember-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: -8px;
-  margin-bottom: 8px;
-}
-
-.login-button {
-  margin-top: 8px;
-  font-weight: 600;
-  transition: all 0.3s;
-}
-
-.login-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 82, 217, 0.3);
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.login-footer p {
-  font-size: 13px;
-  color: #999;
-  margin: 0;
-}
-
-@media (max-width: 480px) {
   .login-box {
-    padding: 32px 24px;
+    max-width: 480px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-header h2 {
+    font-size: 28px;
+  }
+
+  .login-section {
+    padding: 40px 24px;
+  }
+
+  .login-box {
     max-width: 100%;
   }
 
-  .login-header h1 {
+  .login-button {
+    height: 52px;
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-section {
+    padding: 32px 20px;
+  }
+
+  .login-header {
+    margin-bottom: 32px;
+  }
+
+  .login-header h2 {
     font-size: 24px;
   }
 
-  .login-header i {
-    font-size: 48px;
+  .login-header p {
+    font-size: 14px;
+  }
+
+  .login-footer {
+    margin-top: 32px;
+    padding-top: 24px;
   }
 }
 </style>

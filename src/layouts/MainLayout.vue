@@ -1,209 +1,244 @@
 <template>
   <div class="main-layout">
-    <t-layout>
-      <!-- 侧边栏 -->
-      <t-aside :width="sidebarCollapsed ? '64px' : '232px'" class="sidebar">
-        <div class="sidebar-header">
-          <div v-if="!sidebarCollapsed" class="logo">
-            <i class="ri-store-2-line"></i>
-            <span class="logo-text">澳门生活商城</span>
-          </div>
-          <div v-else class="logo-collapsed">
-            <i class="ri-store-2-line"></i>
+    <Sidebar />
+    <div class="layout-content">
+      <div class="content-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" @click="toggleSidebar">
+            <i class="ri-menu-line"></i>
+          </button>
+          <div class="breadcrumb">
+            <i :class="currentRoute.icon"></i>
+            <span>{{ currentRoute.title }}</span>
           </div>
         </div>
-        <t-menu
-          :value="activeMenu"
-          :collapsed="sidebarCollapsed"
-          theme="light"
-          @change="handleMenuChange"
-        >
-          <t-menu-item value="dashboard">
-            <template #icon>
-              <i class="ri-dashboard-line"></i>
-            </template>
-            店铺仪表板
-          </t-menu-item>
-          <t-menu-item value="orders">
-            <template #icon>
-              <i class="ri-file-list-3-line"></i>
-            </template>
-            订单管理
-          </t-menu-item>
-        </t-menu>
-      </t-aside>
-
-      <t-layout>
-        <!-- 顶部导航栏 -->
-        <t-header class="header">
-          <div class="header-left">
-            <t-button
-              variant="text"
-              shape="square"
-              @click="toggleSidebar"
-            >
-              <i class="ri-menu-line"></i>
-            </t-button>
+        <div class="header-right">
+          <div class="header-time">
+            {{ currentTime }}
           </div>
-          <div class="header-right">
-            <t-dropdown :options="userMenuOptions" @click="handleUserMenuClick">
-              <t-button variant="text" class="user-info">
-                <i class="ri-user-line"></i>
-                <span class="username">{{ userStore.userInfo?.username || '用户' }}</span>
-                <i class="ri-arrow-down-s-line"></i>
-              </t-button>
-            </t-dropdown>
-          </div>
-        </t-header>
-
-        <!-- 内容区 -->
-        <t-content class="content">
-          <div class="content-wrapper">
-            <router-view />
-          </div>
-        </t-content>
-      </t-layout>
-    </t-layout>
+        </div>
+      </div>
+      <div class="content-main">
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useAppStore } from '@/stores/app'
-import type { DropdownOption } from 'tdesign-vue-next'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import Sidebar from '@/components/Sidebar.vue'
+import dayjs from 'dayjs'
 
-const router = useRouter()
 const route = useRoute()
-const userStore = useUserStore()
-const appStore = useAppStore()
+const currentTime = ref('')
 
-const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
+const routeMap: Record<string, { title: string; icon: string }> = {
+  '/': { title: '儀表板', icon: 'ri-dashboard-line' },
+  '/dashboard': { title: '儀表板', icon: 'ri-dashboard-line' },
+  '/order-manage': { title: '訂單管理', icon: 'ri-file-list-3-line' },
+  '/orders': { title: '訂單管理', icon: 'ri-file-list-3-line' },
+  '/products': { title: '商品管理', icon: 'ri-product-hunt-line' },
+  '/customers': { title: '客戶管理', icon: 'ri-user-line' },
+  '/analytics': { title: '數據分析', icon: 'ri-bar-chart-box-line' },
+  '/settings': { title: '系統設置', icon: 'ri-settings-3-line' }
+}
 
-const activeMenu = computed(() => {
-  const name = route.name as string
-  if (name === 'Dashboard') return 'dashboard'
-  if (name === 'Orders') return 'orders'
-  return ''
+const currentRoute = computed(() => {
+  return routeMap[route.path] || { title: '頁面', icon: 'ri-file-line' }
 })
 
-const userMenuOptions: DropdownOption[] = [
-  {
-    content: '退出登录',
-    value: 'logout'
-  }
-]
-
-function toggleSidebar() {
-  appStore.toggleSidebar()
+const toggleSidebar = () => {
+  console.log('Toggle sidebar')
 }
 
-function handleMenuChange(value: string) {
-  if (value === 'dashboard') {
-    router.push('/dashboard')
-  } else if (value === 'orders') {
-    router.push('/orders')
-  }
+const updateTime = () => {
+  currentTime.value = dayjs().format('YYYY年MM月DD日 HH:mm:ss')
 }
 
-function handleUserMenuClick(data: DropdownOption) {
-  if (data.value === 'logout') {
-    userStore.logout()
-  }
-}
+let timer: number
+
+onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000) as unknown as number
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+})
 </script>
 
 <style scoped>
 .main-layout {
+  display: flex;
+  width: 100%;
   height: 100vh;
+  background: var(--bg-color);
   overflow: hidden;
 }
 
-.sidebar {
-  background: #fff;
-  border-right: 1px solid #e7e7e7;
-  transition: width 0.3s ease;
+.layout-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.sidebar-header {
+/* 頂部欄 */
+.content-header {
   height: 64px;
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  border-bottom: 1px solid #e7e7e7;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #0052d9;
-}
-
-.logo i {
-  font-size: 24px;
-}
-
-.logo-collapsed {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.logo-collapsed i {
-  font-size: 24px;
-  color: #0052d9;
-}
-
-.header {
-  height: 64px;
-  background: #fff;
-  border-bottom: 1px solid #e7e7e7;
+  background: white;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 32px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-s1);
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  gap: 20px;
 }
 
-.header-left .ri-menu-line {
+.mobile-menu-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--d-base) var(--ease-std);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.mobile-menu-btn:active {
+  transform: scale(var(--scale-press));
+}
+
+.mobile-menu-btn i {
+  font-size: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.breadcrumb i {
   font-size: 20px;
+  color: var(--primary-color);
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-info i {
-  font-size: 16px;
-}
-
-.username {
+.header-time {
   font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.content {
-  background: #f5f5f5;
-  height: calc(100vh - 64px);
+/* 主內容區 */
+.content-main {
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding: 32px;
+  background: var(--bg-color);
 }
 
-.content-wrapper {
-  padding: 24px;
+.content-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content-main::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.content-main::-webkit-scrollbar-thumb:hover {
+  background: var(--border-dark);
+}
+
+/* 頁面切換動畫 - 使用設計指南的動效參數 */
+.fade-slide-enter-active {
+  transition: all var(--d-modal) var(--ease-in);
+}
+
+.fade-slide-leave-active {
+  transition: all var(--d-base) var(--ease-out);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(var(--translate-light));
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--translate-light)));
+}
+
+/* 響應式設計 - 移動端優化 */
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .content-header {
+    height: 56px;
+    padding: 0 20px;
+  }
+
+  .content-main {
+    padding: 20px;
+  }
+
+  .header-time {
+    display: none;
+  }
+
+  .breadcrumb {
+    font-size: 15px;
+  }
+
+  .breadcrumb i {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-header {
+    padding: 0 16px;
+  }
+
+  .content-main {
+    padding: 16px;
+  }
 }
 </style>

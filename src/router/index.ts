@@ -22,9 +22,9 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '店铺仪表板', icon: 'dashboard' }
       },
       {
-        path: 'orders',
+        path: 'order-manage',
         name: 'Orders',
-        component: () => import('@/views/Orders.vue'),
+        component: () => import('@/views/OrderManage.vue'),
         meta: { title: '订单管理', icon: 'file-list' }
       }
     ]

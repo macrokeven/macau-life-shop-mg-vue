@@ -1,4 +1,4 @@
-// 用户信息
+// 用戶信息
 export interface UserInfo {
   userId: string
   username: string
@@ -8,17 +8,53 @@ export interface UserInfo {
   email?: string
 }
 
-// 店铺信息
+// 店鋪信息
 export interface ShopInfo {
   shopId: string
   shopName: string
   mainPicUrl?: string
   desc?: string
+  location?: string
   address?: string
   openTime?: string
   closeTime?: string
   status: number
   businessHours?: string
+  schoolId?: string
+}
+
+// 員工登錄響應數據
+export interface StaffLoginData {
+  uid: string
+  identity: number
+  staffId: string
+  shopId: string
+  staffDesc?: string
+  createTime?: string
+  userInfo: {
+    uid: string
+    username?: string
+    phoneNumber?: string
+    roles?: string
+    nickname?: string
+    description?: string
+    avatar?: string
+    email?: string
+    token: string
+  }
+  shopInfo: {
+    shopId: string
+    shopName: string
+    mainPicUrl?: string
+    desc?: string
+    location?: string
+    address?: string
+    openTime?: string
+    closeTime?: string
+    status: number
+    businessHours?: string
+    schoolId?: string
+  }
 }
 
 // 订单状态

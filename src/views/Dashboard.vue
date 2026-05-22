@@ -1,680 +1,801 @@
 <template>
   <div class="dashboard">
-    <!-- 统计卡片 -->
-    <t-row :gutter="16" class="mb-6">
-      <t-col :xs="12" :sm="6">
-        <t-card :bordered="false" class="stat-card stat-card-red">
-          <div class="stat-content">
-            <div class="stat-icon">
-              <i class="ri-money-dollar-circle-line"></i>
-            </div>
-            <div class="stat-info">
-              <div class="stat-label">今日營業總額</div>
-              <div class="stat-value">{{ formatMoney(todayRevenue) }}</div>
-              <div class="stat-footer">
-                <i class="ri-calendar-line"></i> {{ currentDate }}
-              </div>
-            </div>
+    <!-- 統計卡片區域 -->
+    <div class="stats-grid">
+      <div
+        v-for="(stat, index) in stats"
+        :key="index"
+        class="stat-card"
+        :class="`stat-${stat.theme}`"
+      >
+        <div class="stat-icon-wrapper">
+          <div class="stat-icon">
+            <i :class="stat.icon"></i>
           </div>
-        </t-card>
-      </t-col>
-      <t-col :xs="12" :sm="6">
-        <t-card :bordered="false" class="stat-card stat-card-orange">
-          <div class="stat-content">
-            <div class="stat-icon">
-              <i class="ri-pie-chart-line"></i>
-            </div>
-            <div class="stat-info">
-              <div class="stat-label">今日訂單數</div>
-              <div class="stat-value">{{ todayOrderCount }} 單</div>
-              <div class="stat-footer">
-                <i class="ri-time-line"></i> 實時統計
-              </div>
-            </div>
-          </div>
-        </t-card>
-      </t-col>
-      <t-col :xs="12" :sm="6">
-        <t-card :bordered="false" class="stat-card stat-card-green">
-          <div class="stat-content">
-            <div class="stat-icon">
-              <i class="ri-store-2-line"></i>
-            </div>
-            <div class="stat-info">
-              <div class="stat-label">店舖狀態</div>
-              <div class="stat-value">{{ shopStatus }}</div>
-              <div class="stat-footer">
-                <i class="ri-time-line"></i> {{ shopBusinessHours }}
-              </div>
-            </div>
-          </div>
-        </t-card>
-      </t-col>
-      <t-col :xs="12" :sm="6">
-        <t-card :bordered="false" class="stat-card stat-card-blue">
-          <div class="stat-content">
-            <div class="stat-icon">
-              <i class="ri-building-line"></i>
-            </div>
-            <div class="stat-info">
-              <div class="stat-label">店舖名稱</div>
-              <div class="stat-value text-truncate">{{ shopName }}</div>
-              <div class="stat-footer">
-                <i class="ri-map-pin-line"></i> {{ shopAddress }}
-              </div>
-            </div>
-          </div>
-        </t-card>
-      </t-col>
-    </t-row>
-
-    <!-- 店铺信息卡片 -->
-    <t-card v-if="shopInfo" class="mb-6" :bordered="false">
-      <div class="shop-info-wrapper">
-        <div class="shop-image">
-          <img
-            :src="shopInfo.mainPicUrl || defaultShopImage"
-            alt="店鋪圖片"
-            @error="handleImageError"
-          />
         </div>
-        <div class="shop-details">
-          <div class="shop-header">
-            <h3>{{ shopInfo.shopName }}</h3>
-            <t-tag
-              :theme="shopInfo.status === 1 ? 'success' : 'warning'"
-              variant="light"
-            >
-              {{ shopInfo.status === 1 ? '營業中' : '休息中' }}
-            </t-tag>
-          </div>
-          <p class="shop-desc">{{ shopInfo.desc || '—' }}</p>
-          <div class="shop-meta">
-            <span>
-              <i class="ri-time-line"></i>
-              {{ shopInfo.businessHours || formatBusinessHours(shopInfo.openTime, shopInfo.closeTime) }}
-            </span>
-            <span>
-              <i class="ri-map-pin-line"></i>
-              {{ shopInfo.address || '—' }}
-            </span>
+        <div class="stat-content">
+          <div class="stat-label">{{ stat.label }}</div>
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-change" :class="stat.changeType">
+            <i :class="stat.changeIcon"></i>
+            <span>{{ stat.change }}</span>
           </div>
         </div>
       </div>
-    </t-card>
+    </div>
 
-    <!-- 图表区域 -->
-    <t-row :gutter="16">
-      <t-col :xs="24" :lg="10">
-        <t-card :bordered="false" class="chart-card">
-          <template #header>
-            <div>
-              <h3>每日訂單狀態分佈</h3>
-              <p class="chart-subtitle">今日訂單：{{ totalOrders }} 單</p>
-            </div>
-          </template>
-          <div v-if="loading" class="chart-loading">
-            <t-loading size="large" />
+    <!-- 圖表區域 -->
+    <div class="charts-grid">
+      <!-- 訂單趨勢圖 -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <h3>訂單趨勢</h3>
+            <p>近7天訂單統計</p>
           </div>
-          <div v-else-if="dailyChartData.length === 0" class="chart-empty">
-            <i class="ri-pie-chart-line"></i>
-            <p>暫無數據</p>
+          <div class="chart-actions">
+            <button
+              v-for="period in periods"
+              :key="period.value"
+              class="period-btn"
+              :class="{ active: activePeriod === period.value }"
+              @click="changePeriod(period.value)"
+            >
+              {{ period.label }}
+            </button>
+          </div>
+        </div>
+        <div class="chart-body">
+          <div v-if="loading" class="chart-loading">
+            <div class="loader"></div>
+          </div>
+          <div v-else ref="lineChartRef" class="chart-container"></div>
+        </div>
+      </div>
+
+      <!-- 訂單狀態分佈 -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <h3>訂單狀態</h3>
+            <p>今日訂單分佈</p>
+          </div>
+        </div>
+        <div class="chart-body">
+          <div v-if="loading" class="chart-loading">
+            <div class="loader"></div>
           </div>
           <div v-else ref="pieChartRef" class="chart-container"></div>
-        </t-card>
-      </t-col>
-      <t-col :xs="24" :lg="14">
-        <t-card :bordered="false" class="chart-card">
-          <template #header>
-            <div>
-              <h3>周訂單量趨勢</h3>
-              <p class="chart-subtitle">近 7 天每日訂單數</p>
-            </div>
-          </template>
-          <div v-if="loading" class="chart-loading">
-            <t-loading size="large" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 最近訂單列表 -->
+    <div class="recent-orders-card">
+      <div class="card-header">
+        <div class="card-title">
+          <h3>最近訂單</h3>
+          <span class="badge">{{ recentOrders.length }}</span>
+        </div>
+        <button class="view-all-btn" @click="viewAllOrders">
+          查看全部 <i class="ri-arrow-right-line"></i>
+        </button>
+      </div>
+      <div class="orders-list">
+        <div v-for="order in recentOrders" :key="order.id" class="order-item">
+          <div class="order-info">
+            <div class="order-id">訂單 #{{ order.id }}</div>
+            <div class="order-time">{{ order.time }}</div>
           </div>
-          <div v-else-if="weeklyChartData.length === 0" class="chart-empty">
-            <i class="ri-bar-chart-line"></i>
-            <p>暫無數據</p>
+          <div class="order-status" :class="`status-${order.status}`">
+            {{ order.statusText }}
           </div>
-          <div v-else ref="barChartRef" class="chart-container"></div>
-        </t-card>
-      </t-col>
-    </t-row>
+          <div class="order-amount">¥{{ order.amount }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { orderStatistics, todayRealTimeOrderStatisticsByShop } from '@/api/order'
-import { getShopInfoById } from '@/api/shop'
-import { MessagePlugin } from 'tdesign-vue-next'
+import ServerApi from '@/utils/ServerApi'
 import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
-import type { ShopInfo } from '@/types'
 
+const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(true)
-const shopInfo = ref<ShopInfo | null>(null)
-const todayRevenue = ref(0)
-const todayOrderCount = ref(0)
-const dailySlices = ref<any[]>([])
-const weeklyPoints = ref<any[]>([])
-const defaultShopImage = ref('/img/default-shop.jpg')
-
+const activePeriod = ref('7d')
+const lineChartRef = ref<HTMLElement>()
 const pieChartRef = ref<HTMLElement>()
-const barChartRef = ref<HTMLElement>()
+let lineChart: ECharts | null = null
 let pieChart: ECharts | null = null
-let barChart: ECharts | null = null
 
-// 订单状态配置
-const ORDER_STATUS_CONFIG: Record<number, { label: string; color: string }> = {
-  1: { label: '待支付', color: '#ffc107' },
-  3: { label: '備餐中', color: '#5e72e4' },
-  4: { label: '待取餐', color: '#11cdef' },
-  5: { label: '已完成', color: '#2dce89' },
-  19: { label: '退款中', color: '#fb6340' },
-  20: { label: '金額異常', color: '#f5365c' },
-  21: { label: '支付超時', color: '#8965e0' },
-  22: { label: '已取消', color: '#adb5bd' },
-  23: { label: '已退款', color: '#172b4d' },
-  24: { label: '退款失敗', color: '#f5365c' }
-}
+const periods = [
+  { label: '7天', value: '7d' },
+  { label: '30天', value: '30d' },
+  { label: '90天', value: '90d' }
+]
 
-const shopName = computed(() => {
-  return shopInfo.value?.shopName || userStore.shopInfo?.shopName || '店鋪'
-})
-
-const shopAddress = computed(() => {
-  return shopInfo.value?.address || userStore.shopInfo?.address || '—'
-})
-
-const shopStatus = computed(() => {
-  return shopInfo.value?.status === 1 ? '營業中' : '休息中'
-})
-
-const shopBusinessHours = computed(() => {
-  if (shopInfo.value?.businessHours) {
-    return shopInfo.value.businessHours
+// 統計數據
+const stats = ref([
+  {
+    label: '今日營收',
+    value: '¥12,345',
+    change: '+12.5%',
+    changeType: 'up',
+    changeIcon: 'ri-arrow-up-line',
+    icon: 'ri-money-dollar-circle-line',
+    theme: 'blue'
+  },
+  {
+    label: '訂單數量',
+    value: '156',
+    change: '+8.2%',
+    changeType: 'up',
+    changeIcon: 'ri-arrow-up-line',
+    icon: 'ri-file-list-3-line',
+    theme: 'green'
+  },
+  {
+    label: '客戶總數',
+    value: '2,341',
+    change: '+5.7%',
+    changeType: 'up',
+    changeIcon: 'ri-arrow-up-line',
+    icon: 'ri-user-line',
+    theme: 'purple'
+  },
+  {
+    label: '完成率',
+    value: '94.2%',
+    change: '-1.3%',
+    changeType: 'down',
+    changeIcon: 'ri-arrow-down-line',
+    icon: 'ri-checkbox-circle-line',
+    theme: 'orange'
   }
-  return formatBusinessHours(shopInfo.value?.openTime, shopInfo.value?.closeTime)
-})
+])
 
-const currentDate = computed(() => {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-})
-
-const totalOrders = computed(() => {
-  return dailySlices.value.reduce((sum, item) => sum + item.count, 0)
-})
-
-const dailyChartData = computed(() => {
-  const validSlices = dailySlices.value.filter(item => item.count > 0)
-  return validSlices.map(item => {
-    const statusCode = parseInt(item.key)
-    const config = ORDER_STATUS_CONFIG[statusCode] || { label: item.label, color: '#6c757d' }
-    return {
-      name: config.label,
-      value: item.count,
-      itemStyle: { color: config.color }
-    }
-  })
-})
-
-const weeklyChartData = computed(() => {
-  return weeklyPoints.value.map(point => ({
-    date: point.date ? point.date.substring(5, 10) : '',
-    count: point.count || 0
-  }))
-})
+// 最近訂單
+const recentOrders = ref([
+  { id: '20241204001', time: '10:30', status: 'completed', statusText: '已完成', amount: 128 },
+  { id: '20241204002', time: '10:25', status: 'preparing', statusText: '備餐中', amount: 95 },
+  { id: '20241204003', time: '10:20', status: 'pending', statusText: '待支付', amount: 156 },
+  { id: '20241204004', time: '10:15', status: 'completed', statusText: '已完成', amount: 88 },
+  { id: '20241204005', time: '10:10', status: 'completed', statusText: '已完成', amount: 203 }
+])
 
 onMounted(async () => {
-  await loadShopInfo()
-  await loadDashboardData()
   await nextTick()
   initCharts()
+  await loadData()
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  lineChart?.dispose()
   pieChart?.dispose()
-  barChart?.dispose()
 })
 
-async function loadShopInfo() {
-  const cachedShopInfo = userStore.shopInfo
-  if (cachedShopInfo) {
-    shopInfo.value = cachedShopInfo
-  }
-
-  const shopId = userStore.shopInfo?.shopId
-  if (shopId) {
-    try {
-      const res = await getShopInfoById(shopId)
-      if (res.status === 0 && res.data) {
-        shopInfo.value = res.data
-        userStore.setShopInfo(res.data)
-      }
-    } catch (error) {
-      console.error('獲取店鋪信息失敗:', error)
-    }
-  }
-}
-
-async function loadDashboardData() {
+async function loadData() {
   loading.value = true
-  const shopId = userStore.shopInfo?.shopId
-
-  if (!shopId) {
-    MessagePlugin.warning('未找到店鋪信息')
-    loading.value = false
-    return
-  }
-
   try {
-    const [statisticsRes, todayRes] = await Promise.all([
-      orderStatistics(),
-      todayRealTimeOrderStatisticsByShop(shopId)
-    ])
+    const shopId = localStorage.getItem("shopId") || ""
 
-    if (statisticsRes.status === 0 && statisticsRes.data) {
-      const data = statisticsRes.data
-
-      if (data.dailyJson && data.dailyJson.buckets) {
-        dailySlices.value = normalizeDailySlices(data.dailyJson.buckets)
+    // 获取今日实时统计
+    const todayStatsRes = await ServerApi.OrderInfo.todayRealTimeOrderStatisticsByShop(
+      shopId,
+      (error) => {
+        console.error('获取今日统计失败:', error)
       }
+    )
 
-      if (Array.isArray(data.weeklyJson)) {
-        weeklyPoints.value = data.weeklyJson
-      } else if (data.weeklyJson && Array.isArray(data.weeklyJson.points)) {
-        weeklyPoints.value = data.weeklyJson.points
+    if (todayStatsRes && todayStatsRes.status === 0 && todayStatsRes.data) {
+      const todayData = todayStatsRes.data
+      // 更新今日营收 (分转元)
+      if (stats.value[0]) {
+        const revenue = (todayData.totalNeedPayMop || 0) / 100
+        stats.value[0].value = `MOP ${revenue.toFixed(2)}`
+      }
+      // 更新订单数量
+      if (stats.value[1]) {
+        stats.value[1].value = `${todayData.successOrderCount || 0}`
       }
     }
 
-    if (todayRes.status === 0 && todayRes.data) {
-      todayRevenue.value = todayRes.data.totalNeedPayMop || 0
-      todayOrderCount.value = todayRes.data.successOrderCount || 0
+    // 获取订单统计数据（用于图表）
+    const orderStatsRes = await ServerApi.OrderInfo.orderStatistics(
+      (error) => {
+        console.error('获取订单统计失败:', error)
+      }
+    )
+
+    if (orderStatsRes && orderStatsRes.status === 0 && orderStatsRes.data) {
+      const statsData = orderStatsRes.data
+
+      // 更新每日订单分布（饼图）
+      if (statsData.dailyJson && statsData.dailyJson.buckets) {
+        updatePieChart(statsData.dailyJson.buckets)
+      }
+
+      // 更新每周订单趋势（折线图）
+      if (statsData.weeklyJson && Array.isArray(statsData.weeklyJson)) {
+        updateLineChart(statsData.weeklyJson)
+      }
     }
   } catch (error) {
-    console.error('加載儀表板數據異常:', error)
-    MessagePlugin.error('加載數據失敗')
+    console.error('加載數據失敗:', error)
   } finally {
     loading.value = false
   }
 }
 
-function normalizeDailySlices(buckets: any[]) {
-  const acc: Record<string, number> = {}
-
-  buckets.forEach(item => {
-    const key = canonKey(item.key || '', item.label || '')
-    const count = typeof item.count === 'number' ? item.count : parseInt(item.count || 0)
-    acc[key] = (acc[key] || 0) + count
-  })
-
-  return Object.entries(acc).map(([key, count]) => ({
-    key,
-    label: canonLabel(key),
-    count
-  }))
-}
-
-function canonKey(rawKey: string, rawLabel: string): string {
-  const key = rawKey.toString().toLowerCase().trim()
-  const label = rawLabel.toString()
-
-  const keyMap: Record<string, string> = {
-    'pending': '1',
-    'preparing': '3',
-    'prepare': '3',
-    'waiting_pickup': '4',
-    'finished': '5',
-    'refunding': '19',
-    'payment_error': '20',
-    'timeout': '21',
-    'canceled': '22',
-    'refunded': '23',
-    'refund_failed': '24'
-  }
-
-  if (keyMap[key]) return keyMap[key]
-
-  if (key === 'finish') {
-    if (label.includes('待取') || label.includes('待提') ||
-        label.includes('待領') || label.includes('待自取')) {
-      return '4'
-    }
-    return '5'
-  }
-
-  const n = parseInt(key)
-  return !isNaN(n) ? n.toString() : key
-}
-
-function canonLabel(code: string): string {
-  const statusCode = parseInt(code)
-  if (!isNaN(statusCode) && ORDER_STATUS_CONFIG[statusCode]) {
-    return ORDER_STATUS_CONFIG[statusCode].label
-  }
-  return '其它'
-}
-
-function formatMoney(amount: number): string {
-  const value = amount / 100.0
-  return `MOP ${value.toFixed(2)}`
-}
-
-function formatBusinessHours(openTime?: string, closeTime?: string): string {
-  if (!openTime || !closeTime) return '—'
-  const open = openTime.substring(0, 5)
-  const close = closeTime.substring(0, 5)
-  return `${open} - ${close}`
-}
-
-function handleImageError(event: Event) {
-  const target = event.target as HTMLImageElement
-  target.src = defaultShopImage.value
-}
-
 function initCharts() {
-  if (dailyChartData.value.length > 0 && pieChartRef.value) {
-    pieChart = echarts.init(pieChartRef.value)
-    pieChart.setOption({
-      tooltip: {
-        trigger: 'item',
-        formatter: '{b}: {c} ({d}%)'
-      },
-      legend: {
-        bottom: 10,
-        left: 'center'
-      },
-      series: [
-        {
-          type: 'pie',
-          radius: ['40%', '70%'],
-          center: ['50%', '45%'],
-          avoidLabelOverlap: false,
-          itemStyle: {
-            borderRadius: 10,
-            borderColor: '#fff',
-            borderWidth: 2
-          },
+  if (!lineChartRef.value || !pieChartRef.value) return
+
+  // 初始化折線圖
+  lineChart = echarts.init(lineChartRef.value)
+  const lineOption = {
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true
+    },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e0e0e0',
+      borderWidth: 1,
+      textStyle: { color: '#333' },
+      axisPointer: {
+        type: 'cross',
+        crossStyle: { color: '#999' }
+      }
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: ['週一', '週二', '週三', '週四', '週五', '週六', '週日'],
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisLabel: { color: '#666' }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: '#666' },
+      splitLine: { lineStyle: { color: '#f0f0f0' } }
+    },
+    series: [
+      {
+        name: '訂單數',
+        type: 'line',
+        smooth: true,
+        data: [120, 132, 101, 134, 90, 230, 210],
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(0, 82, 217, 0.3)' },
+            { offset: 1, color: 'rgba(0, 82, 217, 0.05)' }
+          ])
+        },
+        lineStyle: { width: 3, color: '#0052d9' },
+        itemStyle: { color: '#0052d9' }
+      }
+    ]
+  }
+  lineChart.setOption(lineOption)
+
+  // 初始化餅圖
+  pieChart = echarts.init(pieChartRef.value)
+  const pieOption = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e0e0e0',
+      borderWidth: 1,
+      textStyle: { color: '#333' }
+    },
+    legend: {
+      bottom: '5%',
+      left: 'center',
+      textStyle: { color: '#666' }
+    },
+    series: [
+      {
+        name: '訂單狀態',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
           label: {
-            show: false
-          },
-          emphasis: {
-            label: {
-              show: true,
-              fontSize: 16,
-              fontWeight: 'bold'
-            }
-          },
-          data: dailyChartData.value
-        }
-      ]
+            show: true,
+            fontSize: 18,
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: [
+          { value: 48, name: '已完成', itemStyle: { color: '#52c41a' } },
+          { value: 25, name: '備餐中', itemStyle: { color: '#1890ff' } },
+          { value: 15, name: '待取餐', itemStyle: { color: '#faad14' } },
+          { value: 12, name: '其他', itemStyle: { color: '#d9d9d9' } }
+        ]
+      }
+    ]
+  }
+  pieChart.setOption(pieOption)
+}
+
+function updateLineChart(weeklyData: any[]) {
+  if (!lineChart) return
+
+  // 提取日期和数量
+  const dates = weeklyData.map(item => {
+    const date = new Date(item.date)
+    return `${date.getMonth() + 1}/${date.getDate()}`
+  })
+  const counts = weeklyData.map(item => item.count || 0)
+
+  lineChart.setOption({
+    xAxis: {
+      data: dates
+    },
+    series: [{
+      data: counts
+    }]
+  })
+}
+
+function updatePieChart(buckets: any[]) {
+  if (!pieChart) return
+
+  // 状态映射（基于实际返回的 key 值）
+  const statusMap: Record<string, { name: string; color: string }> = {
+    'finished': { name: '已完成', color: '#52c41a' },
+    'preparing': { name: '備餐中', color: '#1890ff' },
+    'waiting_pickup': { name: '待取餐', color: '#faad14' },
+    'pending': { name: '待支付', color: '#fa8c16' },
+    'refunding': { name: '退款中', color: '#faad14' },
+    'payment_error': { name: '金額異常', color: '#ff4d4f' },
+    'timeout': { name: '支付超時', color: '#d9d9d9' },
+    'canceled': { name: '已取消', color: '#d9d9d9' },
+    'refunded': { name: '已退款', color: '#d9d9d9' }
+  }
+
+  // 过滤掉数量为 0 的状态
+  const pieData = buckets
+    .filter(bucket => bucket.count > 0)
+    .map(bucket => ({
+      value: bucket.count,
+      name: statusMap[bucket.key]?.name || bucket.label || '其他',
+      itemStyle: { color: statusMap[bucket.key]?.color || '#d9d9d9' }
+    }))
+
+  // 如果没有数据,显示默认提示
+  if (pieData.length === 0) {
+    pieData.push({
+      value: 1,
+      name: '暫無數據',
+      itemStyle: { color: '#f0f0f0' }
     })
   }
 
-  if (weeklyChartData.value.length > 0 && barChartRef.value) {
-    barChart = echarts.init(barChartRef.value)
-    barChart.setOption({
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow'
-        }
-      },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        containLabel: true
-      },
-      xAxis: {
-        type: 'category',
-        data: weeklyChartData.value.map(d => d.date),
-        axisTick: {
-          alignWithLabel: true
-        }
-      },
-      yAxis: {
-        type: 'value',
-        minInterval: 1
-      },
-      series: [
-        {
-          name: '訂單數',
-          type: 'bar',
-          barWidth: '60%',
-          data: weeklyChartData.value.map(d => d.count),
-          itemStyle: {
-            color: '#0052d9',
-            borderRadius: [4, 4, 0, 0]
-          }
-        }
-      ]
-    })
-  }
+  pieChart.setOption({
+    series: [{
+      data: pieData
+    }]
+  })
 }
 
 function handleResize() {
+  lineChart?.resize()
   pieChart?.resize()
-  barChart?.resize()
+}
+
+function changePeriod(period: string) {
+  activePeriod.value = period
+  // 重新加載數據
+  loadData()
+}
+
+function viewAllOrders() {
+  router.push('/order-manage')
 }
 </script>
 
 <style scoped>
 .dashboard {
-  padding: 0;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
-.mb-6 {
+/* 統計卡片網格 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
   margin-bottom: 24px;
 }
 
 .stat-card {
-  height: 100%;
-}
-
-.stat-card :deep(.t-card__body) {
-  padding: 20px;
-}
-
-.stat-content {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--stat-color-from), var(--stat-color-to));
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover::before {
+  transform: scaleX(1);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card.stat-blue {
+  --stat-color-from: #0052d9;
+  --stat-color-to: #1890ff;
+}
+
+.stat-card.stat-green {
+  --stat-color-from: #52c41a;
+  --stat-color-to: #73d13d;
+}
+
+.stat-card.stat-purple {
+  --stat-color-from: #722ed1;
+  --stat-color-to: #9254de;
+}
+
+.stat-card.stat-orange {
+  --stat-color-from: #fa8c16;
+  --stat-color-to: #ffa940;
+}
+
+.stat-icon-wrapper {
+  flex-shrink: 0;
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--stat-color-from), var(--stat-color-to));
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  font-size: 28px;
-  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.stat-card-red {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: #fff;
+.stat-icon i {
+  font-size: 32px;
+  color: white;
 }
 
-.stat-card-red .stat-icon {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.stat-card-orange {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: #fff;
-}
-
-.stat-card-orange .stat-icon {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.stat-card-green {
-  background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
-  color: #fff;
-}
-
-.stat-card-green .stat-icon {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.stat-card-blue {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-}
-
-.stat-card-blue .stat-icon {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.stat-info {
+.stat-content {
   flex: 1;
-  min-width: 0;
 }
 
 .stat-label {
-  font-size: 13px;
-  opacity: 0.9;
-  margin-bottom: 6px;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.stat-footer {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.shop-info-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.shop-image {
-  width: 100px;
-  height: 100px;
-  border-radius: 12px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.shop-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.shop-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.shop-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  font-size: 14px;
+  color: var(--text-tertiary);
   margin-bottom: 8px;
 }
 
-.shop-header h3 {
-  margin: 0;
-  font-size: 18px;
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 600;
 }
 
-.shop-desc {
-  color: #666;
-  margin: 0 0 12px 0;
-  font-size: 14px;
+.stat-change.up {
+  background: #f6ffed;
+  color: #52c41a;
 }
 
-.shop-meta {
-  display: flex;
-  gap: 24px;
-  font-size: 13px;
-  color: #666;
+.stat-change.down {
+  background: #fff2e8;
+  color: #fa8c16;
 }
 
-.shop-meta span {
+/* 圖表網格 */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.chart-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
 }
 
-.chart-card :deep(.t-card__header) {
-  padding: 20px 24px;
-  border-bottom: 1px solid #e7e7e7;
-}
-
-.chart-card h3 {
-  margin: 0 0 4px 0;
-  font-size: 16px;
+.chart-title h3 {
+  font-size: 18px;
   font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
 }
 
-.chart-subtitle {
-  margin: 0;
+.chart-title p {
   font-size: 13px;
-  color: #666;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.chart-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.period-btn {
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-gray);
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+}
+
+.period-btn.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.chart-body {
+  padding: 20px;
+  position: relative;
 }
 
 .chart-container {
-  height: 350px;
   width: 100%;
+  height: 320px;
 }
 
-.chart-loading,
-.chart-empty {
-  height: 350px;
+.chart-loading {
+  width: 100%;
+  height: 320px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #999;
 }
 
-.chart-empty i {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.3;
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-light);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.chart-empty p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.text-truncate {
+/* 最近訂單卡片 */
+.recent-orders-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-title h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.badge {
+  padding: 4px 12px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.view-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  color: var(--primary-color);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.view-all-btn:hover {
+  background: var(--primary-light);
+}
+
+.orders-list {
+  padding: 12px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.order-item:hover {
+  background: var(--bg-hover);
+}
+
+.order-info {
+  flex: 1;
+}
+
+.order-id {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.order-time {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.order-status {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.order-status.status-completed {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.order-status.status-preparing {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.order-status.status-pending {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.order-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 響應式設計 */
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-  .shop-info-wrapper {
-    flex-direction: column;
-    text-align: center;
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 
-  .shop-meta {
-    flex-direction: column;
-    gap: 8px;
+  .stat-card {
+    padding: 20px;
+  }
+
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .stat-icon i {
+    font-size: 28px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .chart-container {
+    height: 280px;
   }
 }
 </style>
